@@ -19,7 +19,7 @@
     <div style="position: relative; flex: 1 1 auto; min-width: 0; height: 540px;">
       <canvas id="quadChart" role="img" aria-label="Scatter plot of World Cup 2026 matches. Hover for a summary, click a point for full detail.">Loading chart&hellip;</canvas>
     </div>
-    <div style="flex: 0 0 250px; display: flex; flex-direction: column; gap: 12px;">
+    <div style="flex: 0 0 210px; display: flex; flex-direction: column; gap: 12px;">
 
       <div style="display: flex; flex-direction: column; gap: 6px;">
         <label for="stagePick" style="font-weight: 700; font-size: 13px; color: #3d3d3a;">Stage</label>
@@ -92,7 +92,7 @@ function oddsRow(label, str){
   const h=parts[0]||"-", d=parts[1]||"-", a=parts[2]||"-";
   return "<div style='display:flex; justify-content:space-between; gap:8px;'>"+
     "<span style='color:#52514e;'>"+label+"</span>"+
-    "<span style='font-variant-numeric:tabular-nums;'>H "+h+" &middot; D "+d+" &middot; A "+a+"</span></div>";
+    "<span style='font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right;'>H "+h+" &middot; D "+d+" &middot; A "+a+"</span></div>";
 }
 
 function showDetail(d){
