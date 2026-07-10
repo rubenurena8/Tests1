@@ -162,10 +162,31 @@ fetch("data.json").then(r=>r.json()).then(data=>{
       plugins:{
         legend:{display:false},
         tooltip:{
-          titleFont:{family:FONT_FAMILY}, bodyFont:{family:FONT_FAMILY},
-          callbacks:{
-            title:(items)=> items[0].raw.rec.Match,
-            label:(ctx)=>{ const d=ctx.raw.rec; return [d.Q, "P(exact score): "+d["P(exact score)"], "(click point for detail)"]; }
+          backgroundColor: 'rgba(251, 250, 246, 0.95)', // Light background
+          titleColor: '#3d3d3a',
+          bodyColor: '#52514e',
+          borderColor: '#e1e0d9',
+          borderWidth: 1,
+          padding: 10,
+          displayColors: false, // Removes the small color square
+          titleFont: { family: FONT_FAMILY, size: 13, weight: 'bold' },
+          bodyFont: { family: FONT_FAMILY, size: 12 },
+          callbacks: {
+            title: (items) => items[0].raw.rec.Match,
+            label: (ctx) => { 
+              const d = ctx.raw.rec; 
+              // Adding coordinate data for deeper insight
+              return [
+                d.Q, 
+                "P(exact score): " + d["P(exact score)"],
+                "Δ₁: " + d.d1.toFixed(3) + " | Δ₂: " + d.d2.toFixed(3)
+              ]; 
+            },
+            footer: () => "(click point for full breakdown)",
+          },
+          footerFont: { family: FONT_FAMILY, size: 10, style: 'italic' },
+          footerColor: '#898781',
+          footerMarginTop: 6
           }
         },
         datalabels:{display:false}
