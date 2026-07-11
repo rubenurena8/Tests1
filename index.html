@@ -137,79 +137,46 @@ function drawPitch(){
   });
 }
 
-function drawGoal() {
-  const svg = document.getElementById("goal");
-  const netPattern = svg.querySelector("defs").outerHTML;
+function drawGoal(){
+  const svg=document.getElementById("goal"); 
+  const netPattern = svg.querySelector('defs').outerHTML;
   svg.innerHTML = netPattern;
 
-  const GOAL_LEFT = 20;
-  const GOAL_TOP = 12;
-  const GOAL_WIDTH = 80;
-  const GOAL_HEIGHT = 28;
-  const GOAL_BOTTOM = GOAL_TOP + GOAL_HEIGHT;
+  const line=(x1,y1,x2,y2,w,col="#2c2c2a")=>{const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("stroke",col);l.setAttribute("stroke-width",w);svg.appendChild(l);};
+  const rect=(x,y,w,h)=>{const r=document.createElementNS(NS,"rect");r.setAttribute("x",x);r.setAttribute("y",y);r.setAttribute("width",w);r.setAttribute("height",h);r.setAttribute("fill","url(#net)");r.setAttribute("stroke","#c3c2b7");r.setAttribute("stroke-width","0.5");svg.appendChild(r);};
 
-  const line = (x1, y1, x2, y2, w, col = "#2c2c2a") => {
-    const l = document.createElementNS(NS, "line");
-    l.setAttribute("x1", x1);
-    l.setAttribute("y1", y1);
-    l.setAttribute("x2", x2);
-    l.setAttribute("y2", y2);
-    l.setAttribute("stroke", col);
-    l.setAttribute("stroke-width", w);
-    svg.appendChild(l);
-  };
+  // Goal Net bounds matching X: 36 to 44 -> SVg X: 20 to 100
+  rect(20, 12, 80, 28);
+  
+  // Goal Ground line (Lighter grey due to light background)
+  line(0, 40, 120, 40, "1.5", "#a3a299");
+  // Crossbar
+  line(20, 12, 100, 12, "3");
+  // Left Post
+  line(20, 12, 20, 40, "3");
+  // Right Post
+  line(100, 12, 100, 40, "3");
 
-  const rect = (x, y, w, h) => {
-    const r = document.createElementNS(NS, "rect");
-    r.setAttribute("x", x);
-    r.setAttribute("y", y);
-    r.setAttribute("width", w);
-    r.setAttribute("height", h);
-    r.setAttribute("fill", "url(#net)");
-    r.setAttribute("stroke", "#c3c2b7");
-    r.setAttribute("stroke-width", "0.5");
-    svg.appendChild(r);
-  };
+  SHOTS.forEach((s,i)=>{ 
+    if(!passes(s))return; 
+    if(s.outcome==="Blocked")return;
+    
+    // Fallback logic to robustly support both raw pitch coordinates (gm_y/gm_z) and previously normalized coordinates (gx/gz)
+    let yVal = s.gm_y !== undefined ? s.gm_y : s.gx;
+    let zVal = s.gm_z !== undefined ? s.gm_z : s.gz;
 
-  // Draw goal net
-  rect(GOAL_LEFT, GOAL_TOP, GOAL_WIDTH, GOAL_HEIGHT);
+    // Failsafe: if data is using the old normalized -1 to 1 format, dynamically rescale it back to 36-44 pitch format 
+    if (yVal !== undefined && yVal >= -2 && yVal <= 2) { yVal = 40 + (yVal * 4); }
+    if (zVal !== undefined && zVal >= 0 && zVal <= 1.5) { zVal = zVal * 2.8; }
+    
+    // Ultimate fallback if coordinate properties don't exist in a shot
+    if (yVal === undefined) yVal = 40; 
+    if (zVal === undefined) zVal = 1;
 
-  // Ground line
-  line(0, GOAL_BOTTOM, 120, GOAL_BOTTOM, "1.5", "#a3a299");
-
-  // Goal frame
-  line(GOAL_LEFT, GOAL_TOP, GOAL_LEFT + GOAL_WIDTH, GOAL_TOP, "3");
-  line(GOAL_LEFT, GOAL_TOP, GOAL_LEFT, GOAL_BOTTOM, "3");
-  line(GOAL_LEFT + GOAL_WIDTH, GOAL_TOP, GOAL_LEFT + GOAL_WIDTH, GOAL_BOTTOM, "3");
-
-  SHOTS.forEach((s, i) => {
-    if (!passes(s)) return;
-    if (s.outcome === "Blocked") return;
-
-    const yVal = Number(s.gm_y);
-    const zVal = Number(s.gm_z);
-
-    // No goalmouth coordinates available
-    if (!Number.isFinite(yVal) || !Number.isFinite(zVal)) return;
-
-    // Allow slight overshoot so misses appear just outside the frame
-    const y = Math.max(-5, Math.min(105, yVal));
-    const z = Math.max(0, Math.min(40, zVal));
-
-    // SofaScore:
-    // gm_y: 0-100 across goal (0 = left post, 100 = right post)
-    // gm_z: 0-35 height (0 = ground, 35 ≈ crossbar)
-    const cx = GOAL_LEFT + (y / 100) * GOAL_WIDTH;
-    const cy = GOAL_BOTTOM - (z / 35) * GOAL_HEIGHT;
-
-    dot(
-      svg,
-      i,
-      cx,
-      cy,
-      1.1 + Math.sqrt(Math.max(s.xg || 0, 0)) * 3.2,
-      s
-    );
+    let cx = (yVal - 34) * 10;
+    let cy = 40 - (zVal * 10);
+    
+    dot(svg,i, cx, cy, 1.1+Math.sqrt(s.xg)*3.2, s); 
   });
 }
 
