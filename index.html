@@ -28,7 +28,7 @@
     </div>
     <div style="flex:1 1 400px; max-width: 600px;">
       <div style="font-size:12px; font-weight:700; color:#3d3d3a; text-align:center; margin-bottom:4px;">Where it went in the goal</div>
-        <svg id="goal" viewBox="-20 -20 160 80" style="width:100%; background:#fbfaf6; border:1px solid #e1e0d9; border-radius:6px;">  
+      <svg id="goal" viewBox="0 0 120 42" style="width:100%; background:#fbfaf6; border:1px solid #e1e0d9; border-radius:6px;">
         <defs>
           <pattern id="net" width="3" height="3" patternUnits="userSpaceOnUse">
             <path d="M 3 0 L 0 3 M 0 0 L 3 3" fill="none" stroke="#d1d0c5" stroke-width="0.4" opacity="0.6"/>
@@ -88,9 +88,6 @@ function dot(svg,i,cx,cy,r,s){
 
   const c=document.createElementNS(NS,"circle");
   c.setAttribute("cx",cx); c.setAttribute("cy",cy); c.setAttribute("r",r);
-  const title = document.createElementNS(NS, "title");
-  title.textContent = `gm_y: ${s.gm_y}, gm_z: ${s.gm_z}`;
-  c.appendChild(title);
   
   const out = getOutcome(s);
   c.setAttribute("fill", outColor[out] || "#52514e");
@@ -104,7 +101,6 @@ function dot(svg,i,cx,cy,r,s){
   c.addEventListener("mouseleave",()=>{hoverId=null;render();});
   c.addEventListener("click",(ev)=>{ev.stopPropagation(); selId=i; showDetail(s); render();});
   svg.appendChild(c);
-  
 }
 
 function drawPitch(){
@@ -166,16 +162,6 @@ function drawGoal(){
     r.setAttribute("stroke", "#c3c2b7");
     r.setAttribute("stroke-width", "0.5");
     svg.appendChild(r);
-
-    // Add inside drawGoal() to visualize coordinate mapping
-  for (let y = 40; y <= 60; y += 2) {
-      let x_pos = 20 + ((y - 44.5) * (80 / 11)); // Use your mapping ratio
-      line(x_pos, 12, x_pos, 40, "0.2", "#ff0000"); // Red vertical grid lines
-  }
-  for (let z = 0; z <= 40; z += 5) {
-      let y_pos = 40 - (z * (28 / 40)); // Use your mapping ratio
-      line(20, y_pos, 100, y_pos, "0.2", "#0000ff"); // Blue horizontal grid lines
-  }
   };
 
   // Goal Net bounds mapping real X: 44.5 to 55.5 -> SVG X: 20 to 100
@@ -213,7 +199,7 @@ function drawGoal(){
 
     // --- UPDATED COORDINATE MAPPING ---
     // Map Y from [44.5, 55.5] (width of 11) to SVG X [20, 100] (width of 80)
-    let cx = 20 + ((yVal - 44.5) * (80 / 11));
+    let cx = 20 + ((yVal - 44.5) * (80 / (55.5 - 44.5)));
     
     // Map Z from [0, 40] (height of 40) to SVG Y [40, 12] (height of 28)
     let cy = 40 - (zVal * (28 / 40));
@@ -221,7 +207,6 @@ function drawGoal(){
     dot(svg, i, cx, cy, 1.1 + Math.sqrt(s.xg) * 3.2, s); 
   });
 }
-
 
 function showDetail(s){
   let xg = s.xg || 0;
