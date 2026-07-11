@@ -176,27 +176,37 @@ function drawGoal(){
   // Right Post
   line(100, 12, 100, 40, "3");
 
-SHOTS.forEach((s, i) => { 
+  SHOTS.forEach((s, i) => { 
     if(!passes(s)) return; 
     if(s.outcome === "Blocked" || s.shot_type === "block") return;
     
-    // 1. Force conversion to numbers and handle missing values safely
-    let yVal = parseFloat(s.gm_y);
-    let zVal = parseFloat(s.gm_z);
+    // Fallback logic to robustly support both raw pitch coordinates (gm_y/gm_z) and previously normalized coordinates (gx/gz)
+    let yVal = s.gm_y !== undefined ? s.gm_y : s.gx;
+    let zVal = s.gm_z !== undefined ? s.gm_z : s.gz;
 
-    // 2. If data is missing (NaN), skip this shot instead of breaking the chart
-    if (isNaN(yVal) || isNaN(zVal)) return;
-
-    // 3. Mapping:
-    // Y (gm_y) is [44.5, 55.3] -> SVG X [20, 100]
-    let cx = 20 + ((yVal - 44.5) * (80 / 10.8));
+    // Failsafe: if data is using an old normalized -1 to 1 format, dynamically rescale it back to the 44.5-55.5 pitch format 
+    if (yVal !== undefined && yVal >= -2 && yVal <= 2) { 
+      yVal = 50 + (yVal * 5.5); 
+    }
+    // Failsafe for Z: map old 0-1.5 bounds to the new 0-40 real-world height
+    if (zVal !== undefined && zVal >= 0 && zVal <= 1.5) { 
+      zVal = (zVal / 1.5) * 40; 
+    }
     
-    // Z (gm_z) is [0, 40] -> SVG Y [40, 12]
+    // Ultimate fallback if coordinate properties don't exist in a shot (defaults to center/middle of goal)
+    if (yVal === undefined) yVal = 50; 
+    if (zVal === undefined) zVal = 20;
+
+    // --- UPDATED COORDINATE MAPPING ---
+    // Map Y from [44.5, 55.5] (width of 11) to SVG X [20, 100] (width of 80)
+    let cx = 20 + ((yVal - 44.5) * (80 / 11));
+    
+    // Map Z from [0, 40] (height of 40) to SVG Y [40, 12] (height of 28)
     let cy = 40 - (zVal * (28 / 40));
     
-    // 4. Draw the dot
-    dot(svg, i, cx, cy, 1.1 + Math.sqrt(s.xg || 0) * 3.2, s); 
-});
+    dot(svg, i, cx, cy, 1.1 + Math.sqrt(s.xg) * 3.2, s); 
+  });
+}
 
 
 function showDetail(s){
