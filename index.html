@@ -145,6 +145,7 @@ function drawGoal(){
   const line=(x1,y1,x2,y2,w,col="#2c2c2a")=>{const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("stroke",col);l.setAttribute("stroke-width",w);svg.appendChild(l);};
   const rect=(x,y,w,h)=>{const r=document.createElementNS(NS,"rect");r.setAttribute("x",x);r.setAttribute("y",y);r.setAttribute("width",w);r.setAttribute("height",h);r.setAttribute("fill","url(#net)");r.setAttribute("stroke","#c3c2b7");r.setAttribute("stroke-width","0.5");svg.appendChild(r);};
 
+  // Keep the visual goal box at X:20-100 (80 wide), Y:12-40 (28 high)
   rect(20, 12, 80, 28);
   line(0, 40, 120, 40, "1.5", "#a3a299");
   line(20, 12, 100, 12, "3");
@@ -156,21 +157,13 @@ function drawGoal(){
     const out = getOutcome(s);
     if(out==="Blocked" || out==="block") return;
     
-    let cx, cy;
+    // Scale 0-100 coordinate data to the 80x28 SVG goal box
+    // gm_y (0-100) -> cx (20-100)
+    // gm_z (0-100) -> cy (40 down to 12)
+    let cx = 20 + (s.gm_y / 100) * 80;
+    let cy = 40 - (s.gm_z / 100) * 28;
+
     let xg = s.xg || 0;
-
-    // Detect Sofascore vs Old formatting
-    if (s.gm_y !== undefined && s.gm_z !== undefined) {
-      // Width spans 44.6 to 55.4 (10.8 units) -> SVG 80 width
-      cx = 20 + ((s.gm_y - 44.6) / 10.8) * 80;
-      // Height spans 0 to 2.44m crossbar -> SVG 28 height
-      cy = 40 - (s.gm_z / 2.44) * 28;
-    } else if (s.gx !== undefined && s.gz !== undefined) {
-      // Old mapping
-      cx = (s.gx - 34) * 10;
-      cy = 40 - (s.gz * 10);
-    }
-
     dot(svg,i, cx, cy, 1.1+Math.sqrt(xg)*3.2, s); 
   });
 }
