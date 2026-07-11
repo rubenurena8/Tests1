@@ -28,7 +28,7 @@
     </div>
     <div style="flex:1 1 400px; max-width: 600px;">
       <div style="font-size:12px; font-weight:700; color:#3d3d3a; text-align:center; margin-bottom:4px;">Where it went in the goal</div>
-      <svg id="goal" viewBox="0 0 120 42" style="width:100%; background:#fbfaf6; border:1px solid #e1e0d9; border-radius:6px;">
+        <svg id="goal" viewBox="-20 -10 160 62" style="width:100%; background:#fbfaf6; border:1px solid #e1e0d9; border-radius:6px;">  
         <defs>
           <pattern id="net" width="3" height="3" patternUnits="userSpaceOnUse">
             <path d="M 3 0 L 0 3 M 0 0 L 3 3" fill="none" stroke="#d1d0c5" stroke-width="0.4" opacity="0.6"/>
@@ -137,7 +137,7 @@ function drawPitch(){
   });
 }
 
-function drawGoal() {
+function drawGoal(){
   const svg = document.getElementById("goal"); 
   const netPattern = svg.querySelector('defs').outerHTML;
   svg.innerHTML = netPattern;
@@ -152,7 +152,6 @@ function drawGoal() {
     l.setAttribute("stroke-width", w);
     svg.appendChild(l);
   };
-  
   const rect = (x, y, w, h) => {
     const r = document.createElementNS(NS, "rect");
     r.setAttribute("x", x);
@@ -168,7 +167,7 @@ function drawGoal() {
   // Goal Net bounds mapping real X: 44.5 to 55.5 -> SVG X: 20 to 100
   rect(20, 12, 80, 28);
   
-  // Goal Ground line
+  // Goal Ground line (Lighter grey due to light background)
   line(0, 40, 120, 40, "1.5", "#a3a299");
   // Crossbar
   line(20, 12, 100, 12, "3");
@@ -179,43 +178,31 @@ function drawGoal() {
 
   SHOTS.forEach((s, i) => { 
     if(!passes(s)) return; 
+    if(s.outcome === "Blocked" || s.shot_type === "block") return;
     
-    // REMOVED the return statement that was hiding blocked shots
-    
-    let yVal, zVal;
+    // Fallback logic to robustly support both raw pitch coordinates (gm_y/gm_z) and previously normalized coordinates (gx/gz)
+    let yVal = s.gm_y !== undefined ? s.gm_y : (s.gx !== undefined ? s.gx : 50);
+    let zVal = s.gm_z !== undefined ? s.gm_z : (s.gz !== undefined ? s.gz : 20);
 
-    // Handle Blocks vs Standard Shots
-    if (s.shot_type === "block" || s.outcome === "Blocked") {
-      // Use the actual horizontal block position. Fallback to gm_y if block_y is missing.
-      yVal = s.block_y !== undefined ? s.block_y : s.gm_y;
-      // Because a block happens on the field, gm_z is often hardcoded/missing. 
-      // We map it to its gm_z if available, otherwise default to a low height.
-      zVal = s.gm_z !== undefined ? s.gm_z : 5; 
-    } else {
-      yVal = s.gm_y !== undefined ? s.gm_y : s.gx;
-      zVal = s.gm_z !== undefined ? s.gm_z : s.gz;
-    }
-
-    // Legacy normalization failsafes
+    // Failsafe: if data is using an old normalized -1 to 1 format, dynamically rescale it back to the 44.5-55.5 pitch format 
     if (yVal !== undefined && yVal >= -2 && yVal <= 2) { 
       yVal = 50 + (yVal * 5.5); 
     }
+    // Failsafe for Z: map old 0-1.5 bounds to the new 0-40 real-world height
     if (zVal !== undefined && zVal >= 0 && zVal <= 1.5) { 
       zVal = (zVal / 1.5) * 40; 
     }
     
+    // Ultimate fallback if coordinate properties don't exist in a shot (defaults to center/middle of goal)
     if (yVal === undefined) yVal = 50; 
     if (zVal === undefined) zVal = 20;
 
-    // Calculate projection
-    let cx = 20 + ((yVal - 44.5) * (80 / 11));
-    let cy = 40 - (zVal * (28 / 40));
+    // --- UPDATED COORDINATE MAPPING ---
+    // Map Y from [44.5, 55.5] (width of 11) to SVG X [20, 100] (width of 80)
+    let cx = 20 + ((yVal - 44.5) * (80 / 10.8));
     
-    // --- CLAMPING --- 
-    // Constrain coordinates within the SVG viewing area (0 to 120 horizontally, 0 to 40 vertically)
-    // Using a 2px padding so the dots don't get perfectly sliced in half by the SVG boundary
-    cx = Math.max(2, Math.min(118, cx));
-    cy = Math.max(2, Math.min(38, cy));
+    // Map Z from [0, 40] (height of 40) to SVG Y [40, 12] (height of 28)
+    let cy = 40 - (zVal * (28 / 40));
     
     dot(svg, i, cx, cy, 1.1 + Math.sqrt(s.xg) * 3.2, s); 
   });
