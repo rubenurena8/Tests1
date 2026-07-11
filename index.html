@@ -180,25 +180,23 @@ SHOTS.forEach((s, i) => {
     if(!passes(s)) return; 
     if(s.outcome === "Blocked" || s.shot_type === "block") return;
     
-    // Use the values directly from your data object
-    // Ensure we are referencing the correct property names (gm_y and gm_z)
-    let yVal = s.gm_y;
-    let zVal = s.gm_z;
+    // 1. Force conversion to numbers and handle missing values safely
+    let yVal = parseFloat(s.gm_y);
+    let zVal = parseFloat(s.gm_z);
 
-    // --- MAPPING ---
-    // Map Y: [44.5, 55.5] range to SVG X [20, 100]
-    // If yVal is outside this range, it will naturally plot outside the posts
-    let cx = 20 + ((yVal - 44.5) * (80 / 11));
+    // 2. If data is missing (NaN), skip this shot instead of breaking the chart
+    if (isNaN(yVal) || isNaN(zVal)) return;
+
+    // 3. Mapping:
+    // Y (gm_y) is [44.5, 55.3] -> SVG X [20, 100]
+    let cx = 20 + ((yVal - 44.5) * (80 / 10.8));
     
-    // Map Z: [0, 40] range to SVG Y [40, 12]
-    // The higher the zVal, the lower the SVG Y value (closer to top of SVG)
+    // Z (gm_z) is [0, 40] -> SVG Y [40, 12]
     let cy = 40 - (zVal * (28 / 40));
     
-    // Check if coordinates are valid numbers before plotting
-    if (!isNaN(cx) && !isNaN(cy)) {
-        dot(svg, i, cx, cy, 1.1 + Math.sqrt(s.xg) * 3.2, s); 
-    }
-  });
+    // 4. Draw the dot
+    dot(svg, i, cx, cy, 1.1 + Math.sqrt(s.xg || 0) * 3.2, s); 
+});
 
 
 function showDetail(s){
