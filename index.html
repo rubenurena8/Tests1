@@ -23,12 +23,11 @@
   <div style="display:flex; gap:14px; flex-wrap:wrap; justify-content:center;">
     <div style="flex:1 1 380px; max-width: 500px;">
       <div style="font-size:12px; font-weight:700; color:#3d3d3a; text-align:center; margin-bottom:4px;">Where the shot was taken</div>
-      <!-- Lighter green pitch background to simulate grass -->
+      <!-- Authentic green grass background -->
       <svg id="pitch" viewBox="-2 -2 72 56.5" style="width:100%; background:#5ca15c; border:1px solid #4a824a; border-radius:6px;"></svg>
     </div>
     <div style="flex:1 1 400px; max-width: 600px;">
       <div style="font-size:12px; font-weight:700; color:#3d3d3a; text-align:center; margin-bottom:4px;">Where it went in the goal</div>
-      <!-- Lighter goal background restored -->
       <svg id="goal" viewBox="0 0 120 42" style="width:100%; background:#fbfaf6; border:1px solid #e1e0d9; border-radius:6px;">
         <defs>
           <pattern id="net" width="3" height="3" patternUnits="userSpaceOnUse">
@@ -42,7 +41,6 @@
     </div>
   </div>
 
-  <!-- Restored Original 4 Categories and Colors -->
   <div style="display:flex; gap:16px; justify-content:center; align-items:center; margin-top:10px; font-size:12px; color:#2c2c2a; flex-wrap:wrap;">
     <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e34948;"></span> Goal</span>
     <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2a78d6;"></span> Saved</span>
@@ -55,33 +53,47 @@
 </div>
 
 <script>
-// Restored to original outcome colors
-const outColor = {Goal:"#e34948", Saved:"#2a78d6", Missed:"#898781", Blocked:"#eda100"};
+// Maps standard outcome colors (also includes robust fallback names for Sofascore format)
+const outColor = {Goal:"#e34948", goal:"#e34948", Saved:"#2a78d6", save:"#2a78d6", Missed:"#898781", miss:"#898781", Blocked:"#eda100", block:"#eda100", Unknown:"#52514e"};
 const NS="http://www.w3.org/2000/svg";
 const XG_BANDS = [["All",1.01],["<1%",0.01],["<5%",0.05],["<10%",0.10],["<20%",0.20],["<50%",0.50],["<70%",0.70],["<90%",0.90]];
 const STAGE_ORDER=["Group Stage","Last 32","Last 16","Quarter-finals","Semi-finals","Final"];
 
 let SHOTS=[], filt={stage:"All",team:"All",player:"All",situ:"All",out:"All",xg:"All"}, hoverId=null, selId=null;
 
+// Helper to determine the mapped outcome category for filtering/colors
+function getOutcome(s) {
+  return s.outcome || s.shot_type || "Unknown";
+}
+
 function uniq(a){return Array.from(new Set(a)).sort();}
 function fillSel(sel,vals){sel.innerHTML="";["All",...vals].forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;sel.appendChild(o);});}
 function xgMax(){const b=XG_BANDS.find(x=>x[0]===filt.xg);return b?b[1]:1.01;}
 function passes(s){
-  return (filt.stage==="All"||s.stage===filt.stage)
-      && (filt.team==="All"||s.team===filt.team)
+  const out = getOutcome(s);
+  const team = s.team || s.match;
+  const stage = s.stage || s.round;
+  const xg = s.xg || 0;
+  
+  return (filt.stage==="All"||stage===filt.stage)
+      && (filt.team==="All"||team===filt.team)
       && (filt.player==="All"||s.player===filt.player)
       && (filt.situ==="All"||s.situation===filt.situ)
-      && (filt.out==="All"||s.outcome===filt.out)
-      && (filt.xg==="All"||s.xg < xgMax());
+      && (filt.out==="All"||out===filt.out)
+      && (filt.xg==="All"||xg < xgMax());
 }
 
 function dot(svg,i,cx,cy,r,s){
+  if (isNaN(cx) || isNaN(cy) || isNaN(r)) return; // Failsafe to prevent crashes
+
   const c=document.createElementNS(NS,"circle");
   c.setAttribute("cx",cx); c.setAttribute("cy",cy); c.setAttribute("r",r);
-  c.setAttribute("fill",outColor[s.outcome]);
+  
+  const out = getOutcome(s);
+  c.setAttribute("fill", outColor[out] || "#52514e");
+  
   const active=(hoverId===i||selId===i);
   c.setAttribute("fill-opacity",active?1:0.75);
-  // Reverted to original crisp borders for better visibility against light and green backgrounds
   c.setAttribute("stroke",active?"#2c2c2a":"#ffffff");
   c.setAttribute("stroke-width",active?0.8:0.3);
   c.style.cursor="pointer";
@@ -93,38 +105,35 @@ function dot(svg,i,cx,cy,r,s){
 
 function drawPitch(){
   const svg=document.getElementById("pitch"); svg.innerHTML="";
-  // Pitch lines updated to bright white to pop against the green grass
   const path=(d)=>{const p=document.createElementNS(NS,"path");p.setAttribute("d",d);p.setAttribute("fill","none");p.setAttribute("stroke","#ffffff");p.setAttribute("stroke-width","0.4");svg.appendChild(p);};
   const line=(x1,y1,x2,y2)=>{const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("stroke","#ffffff");l.setAttribute("stroke-width","0.4");l.setAttribute("stroke-opacity","0.8");svg.appendChild(l);};
   const circle=(cx,cy,r)=>{const c=document.createElementNS(NS,"circle");c.setAttribute("cx",cx);c.setAttribute("cy",cy);c.setAttribute("r",r);c.setAttribute("fill","none");c.setAttribute("stroke","#ffffff");c.setAttribute("stroke-width","0.4");svg.appendChild(c);};
   const spot=(cx,cy,r)=>{const c=document.createElementNS(NS,"circle");c.setAttribute("cx",cx);c.setAttribute("cy",cy);c.setAttribute("r",r);c.setAttribute("fill","#ffffff");svg.appendChild(c);};
 
-  // Outer bounds
   line(0,0, 68,0); line(0,0, 0,52.5); line(68,0, 68,52.5);
-  // Halfway line
   line(0,52.5, 68,52.5);
-  // Center circle & spot
   circle(34, 52.5, 9.15); spot(34, 52.5, 0.4);
-  // Penalty area
   line(13.84,0, 13.84,16.5); line(54.16,0, 54.16,16.5); line(13.84,16.5, 54.16,16.5);
-  // Goal area
   line(24.84,0, 24.84,5.5); line(43.16,0, 43.16,5.5); line(24.84,5.5, 43.16,5.5);
-  // Penalty spot & D-arc
   spot(34, 11, 0.4);
   path("M 26.69 16.5 A 9.15 9.15 0 0 0 41.31 16.5");
-  // Goal net representation
   line(30.34,0, 30.34,-1.5); line(37.66,0, 37.66,-1.5); line(30.34,-1.5, 37.66,-1.5);
 
   SHOTS.forEach((s,i)=>{ 
     if(!passes(s))return; 
     
-    // SOFASCORE PITCH MAPPING
-    // player_x: 0 is the goal line, so we map X directly to vertical (0 to 52.5 visible half)
-    // player_y: 0 to 100 horizontally, mapped to our 68 unit width SVG
-    let px = (s.player_y / 100) * 68;
-    let py = (s.player_x / 100) * 105; // 105 is standard pitch length in meters
+    // Support for both Sofascore (player_x) and old coordinates (px)
+    let pX, pY;
+    if (s.player_x !== undefined) {
+      pX = (s.player_y / 100) * 68;
+      pY = (s.player_x / 100) * 105;
+    } else if (s.px !== undefined) {
+      pX = s.py / 100 * 68;
+      pY = (100 - s.px) / 100 * 105; 
+    }
     
-    dot(svg,i, px, py, 0.7+Math.sqrt(s.xg)*2.4, s); 
+    let xg = s.xg || 0;
+    dot(svg,i, pX, pY, 0.7+Math.sqrt(xg)*2.4, s); 
   });
 }
 
@@ -136,71 +145,76 @@ function drawGoal(){
   const line=(x1,y1,x2,y2,w,col="#2c2c2a")=>{const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("stroke",col);l.setAttribute("stroke-width",w);svg.appendChild(l);};
   const rect=(x,y,w,h)=>{const r=document.createElementNS(NS,"rect");r.setAttribute("x",x);r.setAttribute("y",y);r.setAttribute("width",w);r.setAttribute("height",h);r.setAttribute("fill","url(#net)");r.setAttribute("stroke","#c3c2b7");r.setAttribute("stroke-width","0.5");svg.appendChild(r);};
 
-  // Goal SVG Bounds: SVG X spans 0 to 120, Goal is X: 20 to 100. SVG Y spans 0 to 42, ground is Y: 40, crossbar is Y: 12.
   rect(20, 12, 80, 28);
-  
-  // Goal Ground line (Lighter grey due to light background)
   line(0, 40, 120, 40, "1.5", "#a3a299");
-  // Crossbar
   line(20, 12, 100, 12, "3");
-  // Left Post
   line(20, 12, 20, 40, "3");
-  // Right Post
   line(100, 12, 100, 40, "3");
 
   SHOTS.forEach((s,i)=>{ 
     if(!passes(s))return; 
-    if(s.outcome==="Blocked")return;
+    const out = getOutcome(s);
+    if(out==="Blocked" || out==="block") return;
     
-    // SOFASCORE GOAL MAPPING
-    // gm_y: 44.6 (left post) to 55.4 (right post)
-    // gm_z: 0 (ground) to 2.44 (crossbar)
-    let yVal = s.gm_y;
-    let zVal = s.gm_z;
+    let cx, cy;
+    let xg = s.xg || 0;
 
-    // Failsafe if data is missing
-    if (yVal === undefined) yVal = 50; 
-    if (zVal === undefined) zVal = 1;
+    // Detect Sofascore vs Old formatting
+    if (s.gm_y !== undefined && s.gm_z !== undefined) {
+      // Width spans 44.6 to 55.4 (10.8 units) -> SVG 80 width
+      cx = 20 + ((s.gm_y - 44.6) / 10.8) * 80;
+      // Height spans 0 to 2.44m crossbar -> SVG 28 height
+      cy = 40 - (s.gm_z / 2.44) * 28;
+    } else if (s.gx !== undefined && s.gz !== undefined) {
+      // Old mapping
+      cx = (s.gx - 34) * 10;
+      cy = 40 - (s.gz * 10);
+    }
 
-    // MAP TO SVG COORDINATES
-    // Width: (55.4 - 44.6) = 10.8 units representing 80 SVG units (from X:20 to X:100)
-    let cx = 20 + ((yVal - 44.6) / 10.8) * 80;
-    
-    // Height: 2.44 meters represents 28 SVG units (from Y:40 up to Y:12)
-    let cy = 40 - (zVal / 2.44) * 28;
-    
-    dot(svg,i, cx, cy, 1.1+Math.sqrt(s.xg)*3.2, s); 
+    dot(svg,i, cx, cy, 1.1+Math.sqrt(xg)*3.2, s); 
   });
 }
 
 function showDetail(s){
+  let xg = s.xg || 0;
+  let team = s.team || s.match || "Unknown Match";
+  let opp = s.opponent || "Opponent";
+  let out = getOutcome(s);
+
   document.getElementById("detail").innerHTML =
-    "<div style='font-weight:700; font-size:13px; color:#2c2c2a;'>"+s.player+" &middot; "+s.team+"</div>"+
-    "<div style='color:#898781; margin-bottom:8px;'>vs "+s.opponent+" &middot; "+s.minute+"'</div>"+
+    "<div style='font-weight:700; font-size:13px; color:#2c2c2a;'>"+s.player+" &middot; "+team+"</div>"+
+    "<div style='color:#898781; margin-bottom:8px;'>vs "+opp+" &middot; "+s.minute+"'</div>"+
     "<div style='display:grid; grid-template-columns:90px auto; gap:4px 16px;'>"+
-    "<span style='color:#52514e;'>Outcome</span><span style='font-weight:700;color:"+outColor[s.outcome]+"'>"+s.outcome+"</span>"+
-    "<span style='color:#52514e;'>Situation</span><span style='color:#2c2c2a;'>"+s.situation+"</span>"+
-    "<span style='color:#52514e;'>Body part</span><span style='color:#2c2c2a;'>"+s.body_part+"</span>"+
-    "<span style='color:#52514e;'>xG</span><span style='color:#2c2c2a;'>"+s.xg.toFixed(2)+"</span>"+
+    "<span style='color:#52514e;'>Outcome</span><span style='font-weight:700;color:"+(outColor[out] || "#52514e")+"'>"+out+"</span>"+
+    "<span style='color:#52514e;'>Situation</span><span style='color:#2c2c2a;'>"+(s.situation || "Unknown")+"</span>"+
+    "<span style='color:#52514e;'>Body part</span><span style='color:#2c2c2a;'>"+(s.body_part || "Unknown")+"</span>"+
+    "<span style='color:#52514e;'>xG</span><span style='color:#2c2c2a;'>"+xg.toFixed(2)+"</span>"+
     "<span style='color:#52514e;'>xGOT</span><span style='color:#2c2c2a;'>"+(s.xgot>0?s.xgot.toFixed(2):"\u2014")+"</span>"+
-    "<span style='color:#52514e;'>Goalkeeper</span><span style='color:#2c2c2a;'>"+s.goalkeeper+"</span>"+
+    "<span style='color:#52514e;'>Goalkeeper</span><span style='color:#2c2c2a;'>"+(s.goalkeeper || "None")+"</span>"+
     "</div>";
 }
 function updateCounter(){
-  const v=SHOTS.filter(passes), goals=v.filter(s=>s.outcome==="Goal").length, xs=v.reduce((a,s)=>a+s.xg,0);
+  const v=SHOTS.filter(passes);
+  const goals=v.filter(s=>getOutcome(s)==="Goal" || getOutcome(s)==="goal").length;
+  const xs=v.reduce((a,s)=>a+(s.xg||0),0);
   document.getElementById("counter").textContent=v.length+" shots \u00b7 "+xs.toFixed(1)+" xG \u00b7 "+goals+" goals";
 }
 function render(){ drawPitch(); drawGoal(); updateCounter(); }
 
 fetch("shots.json").then(r=>r.json()).then(data=>{
   SHOTS=data;
-  const stagesPresent=STAGE_ORDER.filter(s=>SHOTS.some(x=>x.stage===s))
-    .concat(uniq(SHOTS.map(s=>s.stage)).filter(s=>!STAGE_ORDER.includes(s)));
+  const stageMap = s => s.stage || s.round || "Unknown";
+  const teamMap = s => s.team || s.match || "Unknown";
+
+  const stagesPresent=STAGE_ORDER.filter(st=>SHOTS.some(x=>stageMap(x)===st))
+    .concat(uniq(SHOTS.map(stageMap)).filter(st=>!STAGE_ORDER.includes(st)));
+  
   fillSel(document.getElementById("stageF"), stagesPresent);
-  fillSel(document.getElementById("teamF"), uniq(SHOTS.map(s=>s.team)));
+  fillSel(document.getElementById("teamF"), uniq(SHOTS.map(teamMap)));
   fillSel(document.getElementById("playerF"), uniq(SHOTS.map(s=>s.player)));
   fillSel(document.getElementById("situF"), uniq(SHOTS.map(s=>s.situation)));
-  fillSel(document.getElementById("outF"), uniq(SHOTS.map(s=>s.outcome)));
+  fillSel(document.getElementById("outF"), uniq(SHOTS.map(getOutcome)));
+  
   const xgF=document.getElementById("xgF"); xgF.innerHTML="";
   XG_BANDS.forEach(([l])=>{const o=document.createElement("option");o.value=l;o.textContent=l;xgF.appendChild(o);});
 
