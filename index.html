@@ -155,6 +155,7 @@ function drawGoal(){
   SHOTS.forEach((s,i)=>{ 
     if(!passes(s))return; 
     const out = getOutcome(s);
+    // Blocked shots are not displayed in the goal view
     if(out==="Blocked" || out==="block") return;
     
     // Scale 0-100 coordinate data to the 80x28 SVG goal box
