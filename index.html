@@ -145,27 +145,38 @@ function drawGoal(){
   const line=(x1,y1,x2,y2,w,col="#2c2c2a")=>{const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("stroke",col);l.setAttribute("stroke-width",w);svg.appendChild(l);};
   const rect=(x,y,w,h)=>{const r=document.createElementNS(NS,"rect");r.setAttribute("x",x);r.setAttribute("y",y);r.setAttribute("width",w);r.setAttribute("height",h);r.setAttribute("fill","url(#net)");r.setAttribute("stroke","#c3c2b7");r.setAttribute("stroke-width","0.5");svg.appendChild(r);};
 
-  // Keep the visual goal box at X:20-100 (80 wide), Y:12-40 (28 high)
+  // Goal Net bounds matching X: 36 to 44 -> SVg X: 20 to 100
   rect(20, 12, 80, 28);
+  
+  // Goal Ground line (Lighter grey due to light background)
   line(0, 40, 120, 40, "1.5", "#a3a299");
+  // Crossbar
   line(20, 12, 100, 12, "3");
+  // Left Post
   line(20, 12, 20, 40, "3");
+  // Right Post
   line(100, 12, 100, 40, "3");
 
   SHOTS.forEach((s,i)=>{ 
     if(!passes(s))return; 
-    const out = getOutcome(s);
-    // Blocked shots are not displayed in the goal view
-    if(out==="Blocked" || out==="block") return;
+    if(s.outcome==="Blocked")return;
     
-    // Scale 0-100 coordinate data to the 80x28 SVG goal box
-    // gm_y (0-100) -> cx (20-100)
-    // gm_z (0-100) -> cy (40 down to 12)
-    let cx = 20 + (s.gm_y / 100) * 80;
-    let cy = 40 - (s.gm_z / 100) * 28;
+    // Fallback logic to robustly support both raw pitch coordinates (gm_y/gm_z) and previously normalized coordinates (gx/gz)
+    let yVal = s.gm_y !== undefined ? s.gm_y : s.gx;
+    let zVal = s.gm_z !== undefined ? s.gm_z : s.gz;
 
-    let xg = s.xg || 0;
-    dot(svg,i, cx, cy, 1.1+Math.sqrt(xg)*3.2, s); 
+    // Failsafe: if data is using the old normalized -1 to 1 format, dynamically rescale it back to 36-44 pitch format 
+    if (yVal !== undefined && yVal >= -2 && yVal <= 2) { yVal = 40 + (yVal * 4); }
+    if (zVal !== undefined && zVal >= 0 && zVal <= 1.5) { zVal = zVal * 2.8; }
+    
+    // Ultimate fallback if coordinate properties don't exist in a shot
+    if (yVal === undefined) yVal = 40; 
+    if (zVal === undefined) zVal = 1;
+
+    let cx = (yVal - 34) * 10;
+    let cy = 40 - (zVal * 10);
+    
+    dot(svg,i, cx, cy, 1.1+Math.sqrt(s.xg)*3.2, s); 
   });
 }
 
