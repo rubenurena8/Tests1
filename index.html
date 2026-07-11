@@ -88,6 +88,9 @@ function dot(svg,i,cx,cy,r,s){
 
   const c=document.createElementNS(NS,"circle");
   c.setAttribute("cx",cx); c.setAttribute("cy",cy); c.setAttribute("r",r);
+  const title = document.createElementNS(NS, "title");
+  title.textContent = `gm_y: ${s.gm_y}, gm_z: ${s.gm_z}`;
+  c.appendChild(title);
   
   const out = getOutcome(s);
   c.setAttribute("fill", outColor[out] || "#52514e");
@@ -101,6 +104,7 @@ function dot(svg,i,cx,cy,r,s){
   c.addEventListener("mouseleave",()=>{hoverId=null;render();});
   c.addEventListener("click",(ev)=>{ev.stopPropagation(); selId=i; showDetail(s); render();});
   svg.appendChild(c);
+  
 }
 
 function drawPitch(){
@@ -162,6 +166,16 @@ function drawGoal(){
     r.setAttribute("stroke", "#c3c2b7");
     r.setAttribute("stroke-width", "0.5");
     svg.appendChild(r);
+
+    // Add inside drawGoal() to visualize coordinate mapping
+  for (let y = 40; y <= 60; y += 2) {
+      let x_pos = 20 + ((y - 44.5) * (80 / 11)); // Use your mapping ratio
+      line(x_pos, 12, x_pos, 40, "0.2", "#ff0000"); // Red vertical grid lines
+  }
+  for (let z = 0; z <= 40; z += 5) {
+      let y_pos = 40 - (z * (28 / 40)); // Use your mapping ratio
+      line(20, y_pos, 100, y_pos, "0.2", "#0000ff"); // Blue horizontal grid lines
+  }
   };
 
   // Goal Net bounds mapping real X: 44.5 to 55.5 -> SVG X: 20 to 100
