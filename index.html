@@ -162,23 +162,29 @@ function drawGoal(){
     if(s.outcome==="Blocked")return;
     
     // Fallback logic to robustly support both raw pitch coordinates (gm_y/gm_z) and previously normalized coordinates (gx/gz)
-    let yVal = s.gm_y !== undefined ? s.gm_y : s.gx;
-    let zVal = s.gm_z !== undefined ? s.gm_z : s.gz;
+    let yVal = s.gm_y;
+    let zVal = s.gm_z;
 
-    // Failsafe: if data is using the old normalized -1 to 1 format, dynamically rescale it back to 36-44 pitch format 
-    if (yVal !== undefined && yVal >= -2 && yVal <= 2) { yVal = 40 + (yVal * 4); }
-    if (zVal !== undefined && zVal >= 0 && zVal <= 1.5) { zVal = zVal * 2.8; }
-    
-    // Ultimate fallback if coordinate properties don't exist in a shot
-    if (yVal === undefined) yVal = 40; 
-    if (zVal === undefined) zVal = 1;
+    if (yVal == null || zVal == null)
+        return;
 
-    let cx = (yVal - 34) * 10;
-    let cy = 40 - (zVal * 10);
+    // allow misses just outside the frame
+    const y = Math.max(-5, Math.min(105, yVal));
+    const z = Math.max(0, Math.min(40, zVal));
+
+    const GOAL_LEFT = 20;
+    const GOAL_TOP = 12;
+    const GOAL_WIDTH = 80;
+    const GOAL_HEIGHT = 28;
+
+    const cx = GOAL_LEFT + (y / 100) * GOAL_WIDTH;
+    const cy = GOAL_TOP + GOAL_HEIGHT - (z / 35) * GOAL_HEIGHT;
+
+    dot(svg, i, cx, cy, 1.1 + Math.sqrt(s.xg) * 3.2, s);
     
-    dot(svg,i, cx, cy, 1.1+Math.sqrt(s.xg)*3.2, s); 
-  });
-}
+        dot(svg,i, cx, cy, 1.1+Math.sqrt(s.xg)*3.2, s); 
+      });
+    }
 
 function showDetail(s){
   let xg = s.xg || 0;
