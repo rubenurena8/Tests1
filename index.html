@@ -117,7 +117,14 @@ function drawPitch(){
 
   SHOTS.forEach((s,i)=>{ 
     if(!passes(s))return; 
-    dot(svg,i, s.py/100*68, (100-s.px)/100*105, 0.7+Math.sqrt(s.xg)*2.4, s); 
+    
+    // SOFASCORE PITCH MAPPING
+    // player_x: 0 is the goal line, so we map X directly to vertical (0 to 52.5 visible half)
+    // player_y: 0 to 100 horizontally, mapped to our 68 unit width SVG
+    let px = (s.player_y / 100) * 68;
+    let py = (s.player_x / 100) * 105; // 105 is standard pitch length in meters
+    
+    dot(svg,i, px, py, 0.7+Math.sqrt(s.xg)*2.4, s); 
   });
 }
 
@@ -129,7 +136,7 @@ function drawGoal(){
   const line=(x1,y1,x2,y2,w,col="#2c2c2a")=>{const l=document.createElementNS(NS,"line");l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);l.setAttribute("stroke",col);l.setAttribute("stroke-width",w);svg.appendChild(l);};
   const rect=(x,y,w,h)=>{const r=document.createElementNS(NS,"rect");r.setAttribute("x",x);r.setAttribute("y",y);r.setAttribute("width",w);r.setAttribute("height",h);r.setAttribute("fill","url(#net)");r.setAttribute("stroke","#c3c2b7");r.setAttribute("stroke-width","0.5");svg.appendChild(r);};
 
-  // Goal Net bounds matching X: 36 to 44 -> SVg X: 20 to 100
+  // Goal SVG Bounds: SVG X spans 0 to 120, Goal is X: 20 to 100. SVG Y spans 0 to 42, ground is Y: 40, crossbar is Y: 12.
   rect(20, 12, 80, 28);
   
   // Goal Ground line (Lighter grey due to light background)
@@ -145,20 +152,22 @@ function drawGoal(){
     if(!passes(s))return; 
     if(s.outcome==="Blocked")return;
     
-    // Fallback logic to robustly support both raw pitch coordinates (gm_y/gm_z) and previously normalized coordinates (gx/gz)
-    let yVal = s.gm_y !== undefined ? s.gm_y : s.gx;
-    let zVal = s.gm_z !== undefined ? s.gm_z : s.gz;
+    // SOFASCORE GOAL MAPPING
+    // gm_y: 44.6 (left post) to 55.4 (right post)
+    // gm_z: 0 (ground) to 2.44 (crossbar)
+    let yVal = s.gm_y;
+    let zVal = s.gm_z;
 
-    // Failsafe: if data is using the old normalized -1 to 1 format, dynamically rescale it back to 36-44 pitch format 
-    if (yVal !== undefined && yVal >= -2 && yVal <= 2) { yVal = 40 + (yVal * 4); }
-    if (zVal !== undefined && zVal >= 0 && zVal <= 1.5) { zVal = zVal * 2.8; }
-    
-    // Ultimate fallback if coordinate properties don't exist in a shot
-    if (yVal === undefined) yVal = 40; 
+    // Failsafe if data is missing
+    if (yVal === undefined) yVal = 50; 
     if (zVal === undefined) zVal = 1;
 
-    let cx = (yVal - 34) * 10;
-    let cy = 40 - (zVal * 10);
+    // MAP TO SVG COORDINATES
+    // Width: (55.4 - 44.6) = 10.8 units representing 80 SVG units (from X:20 to X:100)
+    let cx = 20 + ((yVal - 44.6) / 10.8) * 80;
+    
+    // Height: 2.44 meters represents 28 SVG units (from Y:40 up to Y:12)
+    let cy = 40 - (zVal / 2.44) * 28;
     
     dot(svg,i, cx, cy, 1.1+Math.sqrt(s.xg)*3.2, s); 
   });
