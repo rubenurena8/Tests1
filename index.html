@@ -311,17 +311,17 @@ function drawFinishing(){
         {"font-size":12.5, fill:"#2c2c2a", "text-anchor":"end", "dominant-baseline":"middle",
          "font-family":"'Liberation Sans',Arial,sans-serif"});
     txt(W-rightPad, cy+11, diffStr,
-        {"font-size":10, fill: r.diff>=0.05 ? "#1baf7a" : (r.diff<=-0.05 ? "#e34948" : "#898781"),
+        {"font-size":12, fill: r.diff>=0.05 ? "#1baf7a" : (r.diff<=-0.05 ? "#e34948" : "#898781"),
          "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif", "font-weight":"700"});
     // Shot count — quiet reference, muted grey, left of the diff.
     txt(W-rightPad-40, cy+11, r.shots,
-        {"font-size":11, fill:"#b6b4ab", "text-anchor":"end",
+        {"font-size":11.5, fill:"#b6b4ab", "text-anchor":"end",
          "font-family":"'Liberation Sans',Arial,sans-serif"});
   });
 
   // Column header for the value area.
-  txt(W-rightPad, top-1, "G / xG", {"font-size":8.5, fill:"#b6b4ab", "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif"});
-  txt(W-rightPad-40, top-1, "shots", {"font-size":8, fill:"#cbc9c0", "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif"});
+  txt(W-rightPad, top-1, "Goals / xG", {"font-size":11.5, fill:"#b6b4ab", "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif"});
+  txt(W-rightPad-40, top-1, "Shots", {"font-size":11.5, fill:"#cbc9c0", "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif"});
 }
 
 function render(){ drawPitch(); drawGoal(); updateCounter(); drawFinishing(); }
