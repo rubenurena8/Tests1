@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>WC2026 Team Luck &amp; Market Mispricing</title>
+</head>
+<body>
+<div style="width: 100%; max-width: 980px; margin: 0 auto; font-family: 'Liberation Sans', Arial, sans-serif;">
+  <div style="text-align: center; font-size: 15px; color: #52514e; padding: 6px 0 2px;">FIFA World Cup 2026 &mdash; Team Luck &amp; Market Mispricing</div>
+
+  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 22px; margin: 6px 0 2px; font-size: 13px; color: #2c2c2a;">
+    <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 22px; height: 11px; border-radius: 2px; background: #1baf7a;"></span>Lucky (results above run of play)</span>
+    <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 22px; height: 11px; border-radius: 2px; background: #e34948;"></span>Unlucky (results below run of play)</span>
+    <span style="display: flex; align-items: center; gap: 6px;"><span style="display:inline-block; width: 11px; height: 11px; background:#7a3fb5; transform:rotate(45deg);"></span>Market mispricing (pre&rarr;post)</span>
+  </div>
+
+  <div style="display:flex; justify-content:center; gap:14px; align-items:center; margin:4px 0 8px; font-size:12.5px; color:#3d3d3a;">
+    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="radio" name="norm" value="total" checked> Cumulative (tournament total)</label>
+    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="radio" name="norm" value="pergame"> Per game</label>
+    <span style="width:1px; height:16px; background:#d1d5db;"></span>
+    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="showMis" checked> Show mispricing</label>
+  </div>
+
+  <div style="position: relative; width:100%; height: 900px;">
+    <canvas id="rankChart" role="img" aria-label="Diverging bar chart ranking World Cup 2026 teams by luck, with market mispricing markers.">Loading chart&hellip;</canvas>
+  </div>
+
+  <div style="max-width:900px; margin:2px auto 0; font-size:11.5px; line-height:1.5; color:#898781;">
+    <b>Luck</b> = actual points won minus points &ldquo;deserved&rdquo; by the post-match run of play (post-match odds treated as the deserved win/draw/loss split, draw counted as half). Positive = won more than performances merited.
+    <b>Mispricing</b> = how far the market&rsquo;s pre-match estimate sat below (or above) what the run of play revealed, i.e. post-match minus pre-match win expectancy summed per team. A large positive diamond means the market systematically under-rated the team going in.
+  </div>
+  <div style="text-align: right; font-size: 12px; font-style: italic; color: #898781; padding: 4px 8px 6px 0;">Ruben Urena &middot; Own Analysis</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const FONT_FAMILY = "'Liberation Sans', Arial, sans-serif";
+const C_LUCK_POS="#1baf7a", C_LUCK_NEG="#e34948", C_MIS="#7a3fb5";
+
+function parseOdds(o){const p=o.trim().split(/\s+/).map(v=>parseInt(v)/100);return {h:p[0],d:p[1],a:p[2]};}
+function parseScore(m){const mm=m.match(/(\d+)-(\d+)/);return [parseInt(mm[1]),parseInt(mm[2])];}
+
+let TEAMS=[], chart=null, allData=[];
+
+function compute(){
+  const luck={}, mis={}, g={};
+  const bump=(o,t,k,v)=>{o[t]=(o[t]||0)+v;};
+  allData.forEach(x=>{
+    const H=x.Home,A=x.Away,[hg,ag]=parseScore(x.Match);
+    const pre=parseOdds(x.PreOdds), post=parseOdds(x.PostOdds);
+    let rh,ra; if(hg>ag){rh=1;ra=0;}else if(hg<ag){rh=0;ra=1;}else{rh=0.5;ra=0.5;}
+    const eh=post.h+0.5*post.d, ea=post.a+0.5*post.d;
+    const ehp=pre.h+0.5*pre.d, eap=pre.a+0.5*pre.d;
+    bump(luck,H,'',rh-eh); bump(luck,A,'',ra-ea);
+    bump(mis,H,'',eh-ehp); bump(mis,A,'',ea-eap);
+    g[H]=(g[H]||0)+1; g[A]=(g[A]||0)+1;
+  });
+  return Object.keys(luck).map(t=>({team:t,games:g[t],luck:luck[t],mis:mis[t]}));
+}
+
+function build(){
+  const norm=document.querySelector('input[name=norm]:checked').value;
+  const showMis=document.getElementById('showMis').checked;
+  let rows=compute();
+  const div=(v,gm)=> norm==='pergame'? v/gm : v;
+  rows.forEach(r=>{r.L=div(r.luck,r.games); r.M=div(r.mis,r.games);});
+  rows.sort((a,b)=>b.L-a.L);
+  TEAMS=rows.map(r=>r.team);
+
+  const luckData=rows.map(r=>r.L);
+  const misData=rows.map(r=>r.M);
+
+  const datasets=[{
+    type:'bar', label:'Luck', data:luckData,
+    backgroundColor:luckData.map(v=>v>=0?C_LUCK_POS:C_LUCK_NEG),
+    borderWidth:0, barPercentage:0.72, categoryPercentage:0.9,
+    order:2
+  }];
+  if(showMis){
+    datasets.push({
+      type:'scatter', label:'Market mispricing',
+      data:misData.map((v,i)=>({x:v,y:rows[i].team})),
+      pointStyle:'rectRot', radius:5.5, hoverRadius:7,
+      backgroundColor:C_MIS, borderColor:'#ffffff', borderWidth:1,
+      order:1
+    });
+  }
+
+  const cfg={
+    type:'bar',
+    data:{labels:TEAMS, datasets},
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      layout:{padding:{left:6,right:12,top:4,bottom:4}},
+      scales:{
+        x:{
+          title:{display:true,text: norm==='pergame'? 'Luck / mispricing per game (win-expectancy units)':'Cumulative luck / mispricing (win-expectancy units)',color:'#3d3d3a',font:{size:12.5,family:FONT_FAMILY}},
+          grid:{color:(c)=>c.tick.value===0?'#9a9992':'#e1e0d9', lineWidth:(c)=>c.tick.value===0?1.4:1},
+          ticks:{color:'#898781',font:{family:FONT_FAMILY}}, border:{display:false}
+        },
+        y:{type:'category', grid:{display:false}, ticks:{color:'#2c2c2a',font:{size:11.5,family:FONT_FAMILY}}, border:{display:false}}
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          titleFont:{family:FONT_FAMILY}, bodyFont:{family:FONT_FAMILY},
+          callbacks:{
+            title:(items)=> items[0].label || (items[0].raw && items[0].raw.y) || '',
+            label:(ctx)=>{
+              const r=rows[ctx.dataIndex];
+              if(ctx.dataset.label==='Luck'){
+                const tag=r.L>=0?'lucky':'unlucky';
+                return `Luck: ${r.L>=0?'+':''}${r.L.toFixed(2)} (${tag}) · ${r.games} games`;
+              }
+              return `Mispricing: ${r.M>=0?'+':''}${r.M.toFixed(2)} (${r.M>=0?'under-rated pre-match':'over-rated pre-match'})`;
+            }
+          }
+        }
+      }
+    }
+  };
+  if(chart) chart.destroy();
+  chart=new Chart(document.getElementById('rankChart'),cfg);
+}
+
+fetch('data.json').then(r=>r.json()).then(data=>{
+  allData=data;
+  document.querySelectorAll('input[name=norm]').forEach(el=>el.addEventListener('change',build));
+  document.getElementById('showMis').addEventListener('change',build);
+  build();
+}).catch(err=>{document.getElementById('rankChart').outerHTML="<p style='color:#b13230'>Could not load data.json: "+err+"</p>";});
+</script>
+</body>
+</html>
