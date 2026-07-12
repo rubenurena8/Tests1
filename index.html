@@ -50,7 +50,21 @@
     <span style="color:#898781; margin-left:8px;">dot size = xG</span>
     <span id="counter" style="color:#3d3d3a; font-weight:700;"></span>
   </div>
-  <div style="text-align:right; font-size:12px; font-style:italic; color:#898781; padding:6px 4px 0 0;">Ruben Urena &middot; Own Analysis</div>
+
+  <!-- ===== Finishing vs xG chart ===== -->
+  <div style="margin-top:26px; border-top:1px solid #e1e0d9; padding-top:16px;">
+    <div style="text-align:center; font-size:14px; font-weight:700; color:#3d3d3a;">Finishing vs Expectation &mdash; Top 25 by xG</div>
+    <div style="text-align:center; font-size:12px; color:#898781; margin:2px 0 10px;">Goals scored against expected goals. <span style="color:#1baf7a; font-weight:700;">Green</span> = outperformed xG &middot; <span style="color:#e34948; font-weight:700;">Red</span> = fell short. Respects the filters above.</div>
+    <div style="display:flex; gap:16px; justify-content:center; align-items:center; margin-bottom:6px; font-size:11.5px; color:#2c2c2a; flex-wrap:wrap;">
+      <span><span style="display:inline-block;width:22px;height:9px;border-radius:2px;background:#c3c2b7;vertical-align:middle;"></span> xG (expected)</span>
+      <span><span style="display:inline-block;width:22px;height:9px;border-radius:2px;background:#52514e;vertical-align:middle;"></span> Goals scored</span>
+      <span style="color:#898781;">bar length = value</span>
+    </div>
+    <svg id="finishChart" style="width:100%; background:#fbfaf6; border:1px solid #e1e0d9; border-radius:6px;"></svg>
+    <div id="finishEmpty" style="text-align:center; font-size:12px; color:#898781; font-style:italic; padding:8px 0; display:none;">No shots match the current filters.</div>
+  </div>
+
+  <div style="text-align:right; font-size:12px; font-style:italic; color:#898781; padding:6px 4px 0 0;">Ruben Urena &middot; Sofascore API</div>
 </div>
 
 <script>
@@ -217,7 +231,98 @@ function updateCounter(){
   const xs=v.reduce((a,s)=>a+(s.xg||0),0);
   document.getElementById("counter").textContent=v.length+" shots \u00b7 "+xs.toFixed(1)+" xG \u00b7 "+goals+" goals";
 }
-function render(){ drawPitch(); drawGoal(); updateCounter(); }
+// ---- Finishing vs xG chart (top 25 by xG, respects filters) ----------------
+function drawFinishing(){
+  const svg = document.getElementById("finishChart");
+  const empty = document.getElementById("finishEmpty");
+  if(!svg) return;
+
+  // Aggregate the currently-filtered shots by player.
+  const agg = {};
+  SHOTS.filter(passes).forEach(s=>{
+    const p = s.player || "Unknown";
+    if(!agg[p]) agg[p] = {xg:0, goals:0, team:s.team||""};
+    agg[p].xg   += (s.xg || 0);
+    agg[p].goals+= getOutcome(s)==="Goal" ? 1 : 0;
+  });
+
+  let rows = Object.entries(agg).map(([player,v])=>({player, ...v, diff:v.goals - v.xg}));
+  rows.sort((a,b)=> b.xg - a.xg);          // rank by xG
+  rows = rows.slice(0, 25);
+
+  if(rows.length === 0){ svg.style.display="none"; empty.style.display="block"; return; }
+  svg.style.display=""; empty.style.display="none";
+
+  // Layout geometry (SVG user units == px via viewBox).
+  const rowH = 22, top = 10, bottom = 14;
+  const labelW = 150, valueW = 46, rightPad = 14;
+  const W = 720;
+  const H = top + bottom + rows.length*rowH;
+  const plotL = labelW, plotR = W - valueW - rightPad;
+  const plotW = plotR - plotL;
+
+  const maxVal = Math.max(1, ...rows.map(r=>Math.max(r.xg, r.goals)));
+  const scale = v => (v / maxVal) * plotW;
+
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("height", H);
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+
+  const el=(name,attrs)=>{const e=document.createElementNS(NS,name);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;};
+  const txt=(x,y,s,attrs={})=>{const t=el("text",{x,y,...attrs});t.textContent=s;svg.appendChild(t);return t;};
+
+  // Vertical gridlines at integer goal values.
+  for(let g=0; g<=Math.ceil(maxVal); g++){
+    const gx = plotL + scale(g);
+    svg.appendChild(el("line",{x1:gx,y1:top-2,x2:gx,y2:H-bottom,stroke:"#ece9e1","stroke-width":1}));
+    txt(gx, H-3, g, {"font-size":9, fill:"#b6b4ab", "text-anchor":"middle", "font-family":"'Liberation Sans',Arial,sans-serif"});
+  }
+
+  rows.forEach((r,i)=>{
+    const y = top + i*rowH;
+    const cy = y + rowH/2;
+    const barH = 7, gap = 2;
+
+    // Player name (right-aligned into the label gutter).
+    txt(labelW-8, cy+1, r.player.length>22 ? r.player.slice(0,21)+"\u2026" : r.player,
+        {"font-size":11, fill:"#2c2c2a", "text-anchor":"end", "dominant-baseline":"middle", "font-family":"'Liberation Sans',Arial,sans-serif"});
+
+    // xG bar (top, muted grey).
+    svg.appendChild(el("rect",{x:plotL, y:cy-barH-gap/2, width:Math.max(0.5,scale(r.xg)), height:barH, rx:1.5, fill:"#c3c2b7"}));
+    // Goals bar (bottom, dark).
+    svg.appendChild(el("rect",{x:plotL, y:cy+gap/2, width:Math.max(0.5,scale(r.goals)), height:barH, rx:1.5, fill:"#52514e"}));
+
+    // Over/under-performance segment: from the shorter to the longer bar end,
+    // green if goals>xG, red if goals<xG. Drawn as a thin connecting band.
+    const xgEnd = plotL + scale(r.xg);
+    const gEnd  = plotL + scale(r.goals);
+    if(Math.abs(r.diff) >= 0.05){
+      const over = r.diff > 0;
+      const x0 = Math.min(xgEnd, gEnd), x1 = Math.max(xgEnd, gEnd);
+      svg.appendChild(el("rect",{x:x0, y:cy-barH-gap/2, width:Math.max(0.5,x1-x0), height:barH*2+gap,
+        fill: over ? "#1baf7a" : "#e34948", "fill-opacity":0.22}));
+      // marker tick at the goals end
+      svg.appendChild(el("line",{x1:gEnd, y1:cy-barH-gap/2-1, x2:gEnd, y2:cy+barH+gap/2+1,
+        stroke: over ? "#1baf7a" : "#e34948", "stroke-width":1.6}));
+    }
+
+    // Value label: goals (xG) and signed diff, coloured.
+    const diffStr = (r.diff>=0?"+":"\u2212") + Math.abs(r.diff).toFixed(1);
+    const t = txt(W-rightPad, cy+1,
+        r.goals + " / " + r.xg.toFixed(1),
+        {"font-size":10.5, fill:"#2c2c2a", "text-anchor":"end", "dominant-baseline":"middle",
+         "font-family":"'Liberation Sans',Arial,sans-serif"});
+    // small coloured diff under it
+    txt(W-rightPad, cy+11, diffStr,
+        {"font-size":8.5, fill: r.diff>=0.05 ? "#1baf7a" : (r.diff<=-0.05 ? "#e34948" : "#898781"),
+         "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif", "font-weight":"700"});
+  });
+
+  // Column header for the value area.
+  txt(W-rightPad, top-1, "G / xG", {"font-size":8.5, fill:"#b6b4ab", "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif"});
+}
+
+function render(){ drawPitch(); drawGoal(); updateCounter(); drawFinishing(); }
 
 function init(data){
   SHOTS=data;
