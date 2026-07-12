@@ -240,9 +240,10 @@ function drawFinishing(){
   const agg = {};
   SHOTS.filter(passes).forEach(s=>{
     const p = s.player || "Unknown";
-    if(!agg[p]) agg[p] = {xg:0, goals:0, team:s.team||""};
+    if(!agg[p]) agg[p] = {xg:0, goals:0, shots:0, team:s.team||""};
     agg[p].xg   += (s.xg || 0);
     agg[p].goals+= getOutcome(s)==="Goal" ? 1 : 0;
+    agg[p].shots+= 1;
   });
 
   let rows = Object.entries(agg).map(([player,v])=>({player, ...v, diff:v.goals - v.xg}));
@@ -254,7 +255,7 @@ function drawFinishing(){
 
   // Layout geometry (SVG user units == px via viewBox).
   const rowH = 26, top = 12, bottom = 16;
-  const labelW = 150, valueW = 46, rightPad = 14;
+  const labelW = 150, valueW = 92, rightPad = 14;
   const W = 720;
   const H = top + bottom + rows.length*rowH;
   const plotL = labelW, plotR = W - valueW - rightPad;
@@ -312,10 +313,15 @@ function drawFinishing(){
     txt(W-rightPad, cy+11, diffStr,
         {"font-size":10, fill: r.diff>=0.05 ? "#1baf7a" : (r.diff<=-0.05 ? "#e34948" : "#898781"),
          "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif", "font-weight":"700"});
+    // Shot count — quiet reference, muted grey, left of the diff.
+    txt(W-rightPad-40, cy+11, r.shots + " sh",
+        {"font-size":9, fill:"#b6b4ab", "text-anchor":"end",
+         "font-family":"'Liberation Sans',Arial,sans-serif"});
   });
 
   // Column header for the value area.
   txt(W-rightPad, top-1, "G / xG", {"font-size":8.5, fill:"#b6b4ab", "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif"});
+  txt(W-rightPad-40, top-1, "shots", {"font-size":8, fill:"#cbc9c0", "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif"});
 }
 
 function render(){ drawPitch(); drawGoal(); updateCounter(); drawFinishing(); }
