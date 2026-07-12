@@ -314,8 +314,8 @@ function drawFinishing(){
         {"font-size":10, fill: r.diff>=0.05 ? "#1baf7a" : (r.diff<=-0.05 ? "#e34948" : "#898781"),
          "text-anchor":"end", "font-family":"'Liberation Sans',Arial,sans-serif", "font-weight":"700"});
     // Shot count — quiet reference, muted grey, left of the diff.
-    txt(W-rightPad-40, cy+11, r.shots + " sh",
-        {"font-size":9, fill:"#b6b4ab", "text-anchor":"end",
+    txt(W-rightPad-40, cy+11, r.shots,
+        {"font-size":11, fill:"#b6b4ab", "text-anchor":"end",
          "font-family":"'Liberation Sans',Arial,sans-serif"});
   });
 
