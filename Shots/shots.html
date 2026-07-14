@@ -4,19 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WC2026 &mdash; Shot Explorer</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#2c2c2a; --sub:#52514e; --muted:#898781; --line:#e1e0d9;
-    --card:#fbfaf6; --panel:#ffffff;
+    --card:#ffffff; --panel:#ffffff;
     --blue:#2a78d6; --green:#1baf7a; --amber:#eda100; --red:#e34948;
-    --display:'Space Grotesk','Liberation Sans',Arial,sans-serif;
-    --body:'Inter','Liberation Sans',Arial,sans-serif;
+    --display:'Liberation Sans',Arial,sans-serif;
+    --body:'Liberation Sans',Arial,sans-serif;
   }
   *{box-sizing:border-box;}
-  body{margin:0; font-family:var(--body); color:var(--ink); background:#f4f3ee;
+  body{margin:0; font-family:var(--body); color:var(--ink); background:#ffffff;
        -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;}
   .wrap{width:100%; max-width:1230px; margin:0 auto; padding:26px 18px 44px;}
 
@@ -35,7 +32,14 @@
 
   footer{font-family:var(--display); text-align:right; font-size:13px; color:var(--muted); padding:20px 4px 0 0;}
   footer b{color:var(--sub); font-weight:600;}
-  @media(max-width:520px){ h1{font-size:25px;} }
+  @media(max-width:760px){
+    .wrap{padding:18px 12px 34px;}
+    header{margin:10px 0 12px;}
+    h1{font-size:24px;}
+    .lede{font-size:13px;}
+    /* let both pitch/goal panels take the full width when they stack */
+    .wrap [style*="flex:1 1 380px"], .wrap [style*="flex:1 1 400px"]{max-width:100% !important; flex-basis:100% !important;}
+  }
 </style>
 </head>
 <body>
@@ -69,14 +73,14 @@
     </div>
     <div style="flex:1 1 400px; max-width: 600px;">
       <div style="font-size:12px; font-weight:700; color:#3d3d3a; text-align:center; margin-bottom:4px;">Where it went in the goal</div>
-      <svg id="goal" viewBox="0 0 120 42" style="width:100%; background:#fbfaf6; border:1px solid #e1e0d9; border-radius:6px;">
+      <svg id="goal" viewBox="0 0 120 42" style="width:100%; background:#ffffff; border:1px solid #e1e0d9; border-radius:6px;">
         <defs>
           <pattern id="net" width="3" height="3" patternUnits="userSpaceOnUse">
             <path d="M 3 0 L 0 3 M 0 0 L 3 3" fill="none" stroke="#d1d0c5" stroke-width="0.4" opacity="0.6"/>
           </pattern>
         </defs>
       </svg>
-      <div id="detail" style="margin-top:10px; border:1px solid #e1e0d9; border-radius:8px; padding:10px 12px; font-size:12px; background:#fbfaf6; min-height:110px;">
+      <div id="detail" style="margin-top:10px; border:1px solid #e1e0d9; border-radius:8px; padding:10px 12px; font-size:12px; background:#ffffff; min-height:110px;">
         <span style="color:#898781; font-style:italic;">Click a shot to see the full occasion.</span>
       </div>
     </div>
@@ -103,7 +107,7 @@
       <span><span style="display:inline-block;width:3px;height:14px;background:#1baf7a;vertical-align:middle;"></span> goals scored (tick)</span>
       <span style="color:#898781;">bold tick = beats the noise band</span>
     </div>
-    <svg id="finishChart" style="width:100%; background:#fbfaf6; border:1px solid #e1e0d9; border-radius:6px;"></svg>
+    <svg id="finishChart" style="width:100%; background:#ffffff; border:1px solid #e1e0d9; border-radius:6px;"></svg>
     <div id="finishEmpty" style="text-align:center; font-size:12px; color:#898781; font-style:italic; padding:8px 0; display:none;">No shots match the current filters.</div>
   </div>
 
