@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WC2026 &mdash; Tournament Luck Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2c2c2a; --sub:#52514e; --muted:#898781; --line:#e1e0d9;
+    --card:#fbfaf6; --panel:#ffffff;
+    --credit:#1baf7a; --credit-soft:#bfe6d6;
+    --debt:#e34948;   --debt-soft:#f4cdcc;
+    --blue:#2a78d6; --amber:#eda100;
+    --display:'Space Grotesk','Liberation Sans',Arial,sans-serif;
+    --body:'Inter','Liberation Sans',Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; padding:0; font-family:var(--body); color:var(--ink);
+       background:#f4f3ee; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;}
+  .wrap{width:100%; max-width:940px; margin:0 auto; padding:30px 18px 40px;}
+
+  header{text-align:center; margin-bottom:20px;}
+  .kicker{font-family:var(--display); font-size:12px; font-weight:600; letter-spacing:.18em;
+          text-transform:uppercase; color:var(--muted); margin-bottom:9px;}
+  h1{font-family:var(--display); font-size:33px; font-weight:700; letter-spacing:-0.02em;
+     color:var(--sub); margin:0 0 11px; line-height:1.06;}
+  .lede{font-size:14px; color:var(--muted); max-width:640px; margin:0 auto; line-height:1.55;}
+  .lede b{color:var(--sub); font-weight:600;}
+
+  .controls{display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; justify-content:center;
+             margin:22px 0 6px;}
+  .ctrl{display:flex; flex-direction:column; gap:5px;}
+  .ctrl label{font-family:var(--display); font-size:11px; font-weight:600; letter-spacing:.06em;
+              text-transform:uppercase; color:var(--muted);}
+  select{padding:6px 9px; border:1px solid #c3c2b7; border-radius:6px; font-size:13px;
+          font-family:inherit; color:var(--ink); background:var(--panel); min-width:150px;}
+  .seg{display:flex; border:1px solid #c3c2b7; border-radius:6px; overflow:hidden;}
+  .seg button{border:0; background:var(--panel); font-family:inherit; font-size:12.5px;
+              padding:7px 12px; cursor:pointer; color:var(--sub); border-left:1px solid #ecebe0;}
+  .seg button:first-child{border-left:0;}
+  .seg button.on{background:var(--ink); color:#fff;}
+
+  .layout{display:flex; gap:18px; align-items:flex-start; margin-top:14px;}
+  .ledger{flex:1 1 auto; min-width:0; background:var(--panel); border:1px solid var(--line);
+          border-radius:12px; padding:6px 4px 10px;}
+  .col-head{display:grid; grid-template-columns:30px 1fr 150px 78px; gap:8px; align-items:center;
+            padding:8px 14px 8px; font-family:var(--display); font-size:10.5px; font-weight:600;
+            letter-spacing:.06em; text-transform:uppercase; color:var(--muted);
+            border-bottom:1px solid var(--line);}
+  .col-head .r-bar{text-align:center;}
+  .col-head .r-val{text-align:right;}
+
+  .row{display:grid; grid-template-columns:30px 1fr 150px 78px; gap:8px; align-items:center;
+       padding:7px 14px; cursor:pointer; border-bottom:1px solid #f0efe9;
+       transition:background .12s ease;}
+  .row:last-child{border-bottom:0;}
+  .row:hover{background:#f7f6f1;}
+  .row.sel{background:#f0f4fa;}
+  .rank{font-family:var(--display); font-size:12px; color:var(--muted); text-align:center;}
+  .tname{font-size:13.5px; font-weight:500; color:var(--ink); white-space:nowrap;
+         overflow:hidden; text-overflow:ellipsis;}
+  .tname .played{font-size:11px; color:var(--muted); font-weight:400; margin-left:5px;}
+
+  .bar-wrap{position:relative; height:16px;}
+  .bar-mid{position:absolute; left:50%; top:-3px; bottom:-3px; width:1px; background:#d7d6ce;}
+  .bar{position:absolute; top:2px; height:12px; border-radius:3px;}
+  .bar.credit{background:var(--credit); left:50%;}
+  .bar.debt{background:var(--debt); right:50%;}
+
+  .r-val{text-align:right; font-family:var(--display); font-size:13.5px; font-weight:600;}
+  .r-val.credit{color:var(--credit);}
+  .r-val.debt{color:var(--debt);}
+
+  aside{flex:0 0 268px; position:sticky; top:14px;}
+  .detail{background:var(--panel); border:1px solid var(--line); border-radius:12px;
+          padding:16px 16px 18px; min-height:340px;}
+  .detail .empty{color:var(--muted); font-style:italic; font-size:13px; line-height:1.5;}
+  .d-team{font-family:var(--display); font-size:19px; font-weight:600; color:var(--ink);
+          margin:0 0 2px; letter-spacing:-0.01em;}
+  .d-tag{font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;}
+  .d-tag.credit{color:var(--credit);} .d-tag.debt{color:var(--debt);}
+  .d-hero{display:flex; align-items:baseline; gap:8px; margin:12px 0 4px;}
+  .d-hero .big{font-family:var(--display); font-size:34px; font-weight:700; line-height:1;}
+  .d-hero .big.credit{color:var(--credit);} .d-hero .big.debt{color:var(--debt);}
+  .d-hero .unit{font-size:11px; color:var(--muted);}
+  .d-sub{font-size:12px; color:var(--sub); line-height:1.5; margin:0 0 14px;}
+  .d-stats{display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; margin-bottom:14px;}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px;}
+  .stat .k{font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted);
+           font-family:var(--display); font-weight:600;}
+  .stat .v{font-size:15px; font-weight:600; color:var(--ink); margin-top:2px;}
+  .d-sec{font-family:var(--display); font-size:10.5px; font-weight:600; letter-spacing:.06em;
+         text-transform:uppercase; color:var(--muted); margin:2px 0 7px;}
+  .swing{border-left:3px solid var(--line); padding:2px 0 2px 10px; font-size:12.5px;}
+  .swing .m{font-weight:600; color:var(--ink);}
+  .swing.credit{border-color:var(--credit);}
+  .swing.debt{border-color:var(--debt);}
+  .swing .why{color:var(--sub); margin-top:2px; line-height:1.45;}
+  .swing .why b.credit{color:var(--credit);} .swing .why b.debt{color:var(--debt);}
+
+  .note{font-size:11.5px; color:var(--muted); line-height:1.55; margin:18px auto 0; max-width:660px;
+        text-align:center;}
+  footer{font-family:var(--display); text-align:right; font-size:13px; color:var(--muted);
+         padding:20px 4px 0 0;}
+  footer b{color:var(--sub); font-weight:600;}
+
+  @media (max-width:720px){
+    .layout{flex-direction:column;} aside{position:static; flex-basis:auto; width:100%;}
+    .col-head, .row{grid-template-columns:26px 1fr 100px 66px;}
+    h1{font-size:26px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">FIFA World Cup 2026</div>
+    <h1>Tournament Luck Ledger</h1>
+    <p class="lede">Every team's <b>points banked minus points the market expected them to bank</b>,
+    summed across the tournament. Teams above the line advanced on variance; teams below it
+    underperformed what the pre-match odds implied. Luck is measured against the <b>bookmaker's
+    pre-match probabilities</b> &mdash; not the scoreline &mdash; so it reads as expectation, not hindsight.</p>
+  </header>
+
+  <div class="controls">
+    <div class="ctrl">
+      <label for="stagePick">Include stages</label>
+      <select id="stagePick">
+        <option value="__ALL__">All stages</option>
+        <option value="Group Stage">Group stage only</option>
+        <option value="KO">Knockouts only</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label for="metricPick">Rank by</label>
+      <select id="metricPick">
+        <option value="luck">Total luck (points)</option>
+        <option value="luckPerGame">Luck per game</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>Show</label>
+      <div class="seg" id="viewSeg">
+        <button data-v="all" class="on">All 48</button>
+        <button data-v="ends">Ends only</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="ledger">
+      <div class="col-head">
+        <span>#</span><span>Team</span>
+        <span class="r-bar">Debt&nbsp;&#8592;&nbsp;|&nbsp;&#8594;&nbsp;Credit</span>
+        <span class="r-val">Luck</span>
+      </div>
+      <div id="rows"></div>
+    </div>
+
+    <aside>
+      <div class="detail" id="detail">
+        <div class="empty">Click any team to see where its luck came from &mdash; the single
+        match that swung it most, and the running gap between points banked and points expected.</div>
+      </div>
+    </aside>
+  </div>
+
+  <p class="note">Mock preview built from the existing <code>data.json</code>. Luck per match =
+  actual points (3/1/0) &minus; expected points from pre-match win/draw/loss odds. A team that wins a
+  coin-flip fixture banks ~1.5 points of credit; a heavy favourite that only draws books a debt.</p>
+
+  <footer>Ruben Urena &middot; <b>Own Analysis</b></footer>
+</div>
+
+<script>
+let DATA = [], stage="__ALL__", metric="luck", view="all", selected=null;
+
+const $ = s => document.querySelector(s);
+const fmt = n => (n>=0?"+":"") + n.toFixed(2);
+
+// Recompute team aggregates for a given stage filter from per-match records.
+function aggregate(stageKey){
+  const inStage = m => stageKey==="__ALL__" ? true
+      : stageKey==="KO" ? m.stage!=="Group Stage"
+      : m.stage===stageKey;
+  return DATA.map(t=>{
+    const ms = t.matches.filter(inStage);
+    let luck=0, exp=0, act=0, gf=0, ga=0;
+    let biggest=null;
+    ms.forEach(m=>{
+      luck+=m.luck; exp+=m.exp; act+=m.pts;
+      const sc=m.score.match(/(\d+)\D+(\d+)/);
+      // goals for/against are baked per-team in build; approximate from score+side not needed here
+      if(!biggest || Math.abs(m.luck)>Math.abs(biggest.luck)) biggest=m;
+    });
+    return {team:t.team, played:ms.length, luck:+luck.toFixed(2),
+            expPts:+exp.toFixed(2), actPts:act,
+            luckPerGame: ms.length? +(luck/ms.length).toFixed(3):0,
+            matches:ms, biggest};
+  }).filter(t=>t.played>0);
+}
+
+function render(){
+  let rows = aggregate(stage);
+  rows.sort((a,b)=> b[metric]-a[metric]);
+  const full = rows.slice();
+  if(view==="ends" && rows.length>16){
+    rows = rows.slice(0,8).concat([{sep:true}]).concat(rows.slice(-8));
+  }
+  const maxAbs = Math.max(...full.map(t=>Math.abs(t[metric])), 0.5);
+
+  const host = $("#rows"); host.innerHTML="";
+  rows.forEach(t=>{
+    if(t.sep){
+      const s=document.createElement("div");
+      s.style.cssText="text-align:center;color:#b9b8b0;font-size:11px;padding:6px 0;letter-spacing:.2em;";
+      s.textContent="\u00b7 \u00b7 \u00b7";
+      host.appendChild(s); return;
+    }
+    const rank = full.findIndex(x=>x.team===t.team)+1;
+    const v = t[metric];
+    const side = v>=0 ? "credit":"debt";
+    const pct = Math.min(Math.abs(v)/maxAbs*50, 50);
+    const row=document.createElement("div");
+    row.className="row"+(selected===t.team?" sel":"");
+    row.innerHTML=
+      `<span class="rank">${rank}</span>`+
+      `<span class="tname">${t.team}<span class="played">${t.played}&nbsp;pl</span></span>`+
+      `<span class="bar-wrap"><span class="bar-mid"></span>`+
+        `<span class="bar ${side}" style="${side==='credit'?'left:50%':'right:50%'};width:${pct}%"></span>`+
+      `</span>`+
+      `<span class="r-val ${side}">${fmt(v)}</span>`;
+    row.onclick=()=>{selected=t.team; detail(t); render();};
+    host.appendChild(row);
+  });
+}
+
+function detail(t){
+  const side = t.luck>=0?"credit":"debt";
+  const tag  = t.luck>=0?"Rode the variance":"Ran into the variance";
+  const b=t.biggest;
+  const bside=b.luck>=0?"credit":"debt";
+  const perGame = metric==="luckPerGame";
+  $("#detail").innerHTML=
+    `<div class="d-team">${t.team}</div>`+
+    `<div class="d-tag ${side}">${tag}</div>`+
+    `<div class="d-hero"><span class="big ${side}">${fmt(t.luck)}</span>`+
+      `<span class="unit">points of ${side} vs<br>market expectation</span></div>`+
+    `<div class="d-sub">Banked <b>${t.actPts}</b> points across ${t.played} matches; `+
+      `the pre-match odds implied <b>${t.expPts.toFixed(1)}</b>.</div>`+
+    `<div class="d-stats">`+
+      `<div class="stat"><div class="k">Actual pts</div><div class="v">${t.actPts}</div></div>`+
+      `<div class="stat"><div class="k">Expected pts</div><div class="v">${t.expPts.toFixed(1)}</div></div>`+
+      `<div class="stat"><div class="k">Per game</div><div class="v">${fmt(t.luckPerGame)}</div></div>`+
+      `<div class="stat"><div class="k">Matches</div><div class="v">${t.played}</div></div>`+
+    `</div>`+
+    `<div class="d-sec">Biggest single swing</div>`+
+    `<div class="swing ${bside}">`+
+      `<div class="m">${b.score}</div>`+
+      `<div class="why"><b class="${bside}">${fmt(b.luck)} pts</b> `+
+        `(${b.pts} banked vs ${b.exp.toFixed(1)} expected) &middot; ${b.stage}<br>`+
+        `Classified: ${b.q}</div>`+
+    `</div>`;
+}
+
+fetch("ledger.json").then(r=>r.json()).then(j=>{
+  DATA=j; render();
+});
+
+$("#stagePick").onchange=e=>{stage=e.target.value; selected=null;
+  $("#detail").innerHTML='<div class="empty">Click any team to see where its luck came from.</div>';
+  render();};
+$("#metricPick").onchange=e=>{metric=e.target.value; render(); if(selected){
+  const t=aggregate(stage).find(x=>x.team===selected); if(t) detail(t);}};
+document.querySelectorAll("#viewSeg button").forEach(b=>{
+  b.onclick=()=>{document.querySelectorAll("#viewSeg button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); view=b.dataset.v; render();};
+});
+</script>
+</body>
+</html>
