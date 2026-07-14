@@ -4,21 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WC2026 &mdash; Luck &amp; Mispricing Ledger</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#2c2c2a; --sub:#52514e; --muted:#898781; --line:#e1e0d9;
-    --card:#fbfaf6; --panel:#ffffff;
+    --card:#ffffff; --panel:#ffffff;
     --pos:#1baf7a; --neg:#e34948; --blue:#2a78d6; --amber:#eda100;
     /* colour semantics shared with the Surprise Explorer */
     --q-within:#2a78d6; --q-var:#1baf7a; --q-unexp:#eda100; --q-total:#e34948;
-    --display:'Space Grotesk','Liberation Sans',Arial,sans-serif;
-    --body:'Inter','Liberation Sans',Arial,sans-serif;
+    --display:'Liberation Sans',Arial,sans-serif;
+    --body:'Liberation Sans',Arial,sans-serif;
   }
   *{box-sizing:border-box;}
-  body{margin:0; font-family:var(--body); color:var(--ink); background:#f4f3ee;
+  body{margin:0; font-family:var(--body); color:var(--ink); background:#ffffff;
        -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;}
   .wrap{width:100%; max-width:980px; margin:0 auto; padding:26px 18px 44px;}
 
@@ -111,8 +108,11 @@
   footer{font-family:var(--display); text-align:right; font-size:13px; color:var(--muted); padding:20px 4px 0 0;}
   footer b{color:var(--sub); font-weight:600;}
   @media(max-width:720px){
+    .wrap{padding:18px 12px 34px;}
+    header{margin:10px 0 12px;}
     .layout{flex-direction:column;} aside{position:static; flex-basis:auto; width:100%;}
-    .col-head,.row{grid-template-columns:24px 1fr 120px 62px;} h1{font-size:25px;}
+    .col-head,.row{grid-template-columns:24px 1fr 120px 62px;} h1{font-size:24px;}
+    .lede{font-size:13px;} .axes{margin-top:12px;}
   }
 </style>
 </head>
